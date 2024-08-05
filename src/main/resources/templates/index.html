@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" xmlns:hx-on="http://www.w3.org/1999/xhtml">
+<html lang="en" xmlns:hx-on="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
@@ -29,6 +29,7 @@
                   hx-swap="beforeend"
                   hx-target="#response-container"
                   hx-on::before-request="this.querySelector('#message').value = ''">
+                <input type="hidden" id="chatId" name="chatId">
                 <div class="flex items-center bg-gray-200 rounded-full p-2 shadow-md">
                     <input id="message" name="message" class="bg-gray-200 outline-none text-gray-700 rounded-full py-2 px-4 w-full" type="text" placeholder="Noot noot!">
                     <button type="submit" class="bg-gray-300 hover:bg-gray-400 text-gray-600 rounded-full p-2 ml-2">
@@ -40,10 +41,18 @@
             </form>
         </div>
     </main>
-
-
-
-
 </div>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        let chatId = localStorage.getItem('chatId');
+        if (!chatId) {
+            chatId = /*[[${chatId}]]*/ 'defaultChatId';
+            localStorage.setItem('chatId', chatId);
+        }
+        document.getElementById('chatId').value = chatId;
+    });
+</script>
+
 </body>
 </html>
