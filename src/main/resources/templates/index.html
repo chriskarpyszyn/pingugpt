@@ -28,6 +28,7 @@
                   hx-post="/api/chat"
                   hx-swap="beforeend"
                   hx-target="#response-container"
+                  hx-on::after-request="initializeSSE(event)"
                   hx-on::before-request="this.querySelector('#message').value = ''">
                 <input type="hidden" id="chatId" name="chatId">
                 <div class="flex items-center bg-gray-200 rounded-full p-2 shadow-md">
@@ -52,6 +53,30 @@
         }
         document.getElementById('chatId').value = chatId;
     });
+
+    function initializeSSE(event) {
+        const message = event.detail.requestConfig.parameters.message;
+        const chatId = event.detail.requestConfig.parameters.chatId;
+        const responseContainer = document.querySelector('#response-container');
+        const newResponseElement = responseContainer.lastElementChild;
+        const responseParagraph = newResponseElement.querySelector('p');
+
+        const eventSource = new EventSource(`/api/stream?message=${encodeURIComponent(message)}&chatId=${encodeURIComponent(chatId)}`);
+
+        eventSource.onmessage = function(event) {
+            responseParagraph.textContent += event.data;
+            responseContainer.scrollTop = responseContainer.scrollHeight;
+        };
+
+        eventSource.onerror = function(error) {
+            console.error('EventSource failed:', error);
+            eventSource.close();
+        };
+
+        eventSource.onopen = function() {
+            responseParagraph.textContent = '';
+        };
+    }
 </script>
 
 </body>
