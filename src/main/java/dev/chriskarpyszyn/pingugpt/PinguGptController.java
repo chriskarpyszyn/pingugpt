@@ -28,11 +28,12 @@ public class PinguGptController {
 
     private static final Logger log = LoggerFactory.getLogger(PinguGptController.class);
     private final ChatClient.Builder chatClientBuilder;
-    private final Map<String, ChatMemory> chatMemories = new ConcurrentHashMap<>();
+    ChatMemory chatMemory;
 
     @Autowired
     public PinguGptController(ChatClient.Builder chatClientBuilder) {
         this.chatClientBuilder = chatClientBuilder;
+        chatMemory = new InMemoryChatMemory();
     }
 
     @GetMapping("")
@@ -47,7 +48,7 @@ public class PinguGptController {
     public HtmxResponse generate(@RequestParam String message, @RequestParam String chatId, Model model) {
         log.info("User message: {}, Chat ID: {}", message, chatId);
 
-        ChatMemory chatMemory = chatMemories.computeIfAbsent(chatId, k -> new InMemoryChatMemory());
+
 
         ChatClient chatClient = chatClientBuilder
                 .defaultAdvisors(new MessageChatMemoryAdvisor(chatMemory))
