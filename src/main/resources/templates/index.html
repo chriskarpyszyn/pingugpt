@@ -8,6 +8,84 @@
 
     <script src="https://unpkg.com/htmx.org@2.0.1" integrity="sha384-QWGpdj554B4ETpJJC9z+ZHJcA/i59TyjxEPXiiUgN2WmTyV5OEZWCD6gQhgkdpB/" crossorigin="anonymous"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+
+    <style>
+        .markdown-body {
+            font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
+            font-size: 16px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .markdown-body p {
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+        }
+        .markdown-body h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: .3em;
+        }
+        .markdown-body h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: .3em;
+        }
+        .markdown-body h3 {
+            font-size: 1.25em;
+        }
+        .markdown-body h4 {
+            font-size: 1em;
+        }
+        .markdown-body h5 {
+            font-size: .875em;
+        }
+        .markdown-body h6 {
+            font-size: .85em;
+            color: #6a737d;
+        }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3,
+        .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        .markdown-body code {
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: rgba(27,31,35,0.05);
+            border-radius: 3px;
+        }
+        .markdown-body pre {
+            word-wrap: normal;
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: #f6f8fa;
+            border-radius: 3px;
+        }
+        .markdown-body pre code {
+            display: inline;
+            max-width: auto;
+            padding: 0;
+            margin: 0;
+            overflow: visible;
+            line-height: inherit;
+            word-wrap: normal;
+            background-color: transparent;
+            border: 0;
+        }
+        .markdown-body br {
+            display: block;
+            content: "";
+            margin-top: 0.5em;
+        }
+    </style>
 </head>
 <body class="h-screen bg-gray-100">
 <div class="flex h-full">
@@ -52,6 +130,24 @@
             localStorage.setItem('chatId', chatId);
         }
         document.getElementById('chatId').value = chatId;
+
+        function formatCodeBlocks() {
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+
+        // Call this function after each response is rendered
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    formatCodeBlocks();
+                }
+            });
+        });
+
+        const config = { childList: true, subtree: true };
+        observer.observe(document.querySelector('#response-container'), config);
     });
 
     function initializeSSE(event) {
@@ -61,10 +157,18 @@
         const newResponseElement = responseContainer.lastElementChild;
         const responseParagraph = newResponseElement.querySelector('p');
 
+        let accumulatedResponse = '';
+
         const eventSource = new EventSource(`/api/stream?message=${encodeURIComponent(message)}&chatId=${encodeURIComponent(chatId)}`);
 
         eventSource.onmessage = function(event) {
-            responseParagraph.textContent += event.data;
+            accumulatedResponse += event.data;
+            responseParagraph.innerHTML = marked.parse(accumulatedResponse, {
+                breaks: true,
+                gfm: true,
+                headerIds: false,
+                xhtml: true
+            });
             responseContainer.scrollTop = responseContainer.scrollHeight;
         };
 
@@ -74,7 +178,8 @@
         };
 
         eventSource.onopen = function() {
-            responseParagraph.textContent = '';
+            accumulatedResponse = '';
+            responseParagraph.innerHTML = '';
         };
     }
 </script>
